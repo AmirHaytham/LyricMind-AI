@@ -16,8 +16,6 @@
 
 Generate creative and contextually-aware song lyrics using state-of-the-art deep learning.
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
-
 </div>
 
 ## ✨ Features
