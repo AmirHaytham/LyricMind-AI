@@ -54,6 +54,14 @@ env/
 logs/
 tensorboard/
 
+# Large data files
+500-Greatest-Songs-of-All-Time.zip
+60000-spotify-songs.zip
+
+# Node.js
+node_modules/
+package-lock.json
+
 # OS
 .DS_Store
 Thumbs.db

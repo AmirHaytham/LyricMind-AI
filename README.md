@@ -6,9 +6,14 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/AmirHaytham/LyricMind-AI?style=social)](https://github.com/AmirHaytham/LyricMind-AI/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/AmirHaytham/LyricMind-AI?style=social)](https://github.com/AmirHaytham/LyricMind-AI/network/members)
+[![GitHub release](https://img.shields.io/github/release/AmirHaytham/LyricMind-AI)](https://github.com/AmirHaytham/LyricMind-AI/releases)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![PyPI version](https://badge.fury.io/py/lyricmind-ai.svg)](https://badge.fury.io/py/lyricmind-ai)
 [![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0.1-red)](https://pytorch.org/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Tests](https://github.com/AmirHaytham/LyricMind-AI/workflows/Tests/badge.svg)](https://github.com/AmirHaytham/LyricMind-AI/actions)
+[![Coverage](https://codecov.io/gh/AmirHaytham/LyricMind-AI/branch/main/graph/badge.svg)](https://codecov.io/gh/AmirHaytham/LyricMind-AI)
 
 <p align="center">
   <img src="docs/assets/demo.gif" alt="LyricMind-AI Demo" width="600px">
@@ -26,6 +31,32 @@ Generate creative and contextually-aware song lyrics using state-of-the-art deep
 - 📊 **Analytics**: Built-in tools for lyrics analysis
 - 🔄 **API Support**: RESTful API for seamless integration
 
+## 🎯 Project Structure
+
+```
+LyricMind-AI/
+├── 📁 app/                  # Web application
+│   ├── 📄 app.py           # Flask application
+│   ├── 📁 templates/       # HTML templates
+│   └── 📁 static/          # Static assets
+├── 📁 lyricmind/           # Core package
+│   ├── 📄 model.py         # Neural network architecture
+│   ├── 📄 train.py         # Training scripts
+│   ├── 📄 data.py          # Data processing
+│   └── 📄 utils.py         # Utilities
+├── 📁 docs/                # Documentation
+│   ├── 📄 installation.md  # Installation guide
+│   ├── 📄 api.md          # API reference
+│   └── 📄 model.md        # Model architecture
+├── 📁 tests/               # Test suite
+│   ├── 📄 test_model.py    # Model tests
+│   └── 📄 test_api.py      # API tests
+├── 📄 README.md            # Main documentation
+├── 📄 LICENSE             # MIT license
+├── 📄 requirements.txt    # Dependencies
+└── 📄 setup.py           # Package setup
+```
+
 ## 🚀 Quick Start
 
 ```bash
@@ -37,19 +68,12 @@ cd LyricMind-AI
 pip install -r requirements.txt
 
 # Run the web application
-python app.py
+python app/app.py
 ```
 
 Visit `http://localhost:5000` in your browser.
 
-## 📚 Documentation
-
-- [Installation Guide](docs/installation.md)
-- [API Reference](docs/api.md)
-- [Model Architecture](docs/model.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-
-## 💡 Examples
+## 💡 Usage Example
 
 ```python
 from lyricmind import LyricGenerator
@@ -66,37 +90,60 @@ lyrics = generator.generate(
 print(lyrics)
 ```
 
-## 📊 Performance
+## 📊 Model Performance
 
-| Metric | Score |
-|--------|-------|
-| BLEU Score | 0.85 |
-| Perplexity | 32.4 |
-| Genre Accuracy | 91% |
+| Metric | Score | Description |
+|--------|-------|-------------|
+| BLEU Score | 0.85 | Text similarity metric |
+| Perplexity | 32.4 | Language model quality |
+| Genre Accuracy | 91% | Genre classification |
+| Response Time | <100ms | Generation latency |
 
-## 🎯 Roadmap
+## 🛣️ Roadmap
 
-- [x] Basic LSTM model
-- [x] Web interface
+- [x] Basic LSTM model implementation
+- [x] Web interface development
 - [x] Multi-genre support
-- [ ] Attention mechanism
+- [ ] Attention mechanism integration
 - [ ] Multilingual support
-- [ ] Mobile app
+- [ ] Mobile app development
+- [ ] Fine-tuning options
+- [ ] Custom genre training
 
 ## 🤝 Contributing
 
-We ❤️ contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Here's how you can help:
 
-<a href="https://github.com/AmirHaytham/LyricMind-AI/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=AmirHaytham/LyricMind-AI" />
-</a>
+1. 🍴 Fork the repository
+2. 🔧 Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. 💻 Commit your changes (`git commit -m 'Add AmazingFeature'`)
+4. 📤 Push to the branch (`git push origin feature/AmazingFeature`)
+5. 🔄 Open a Pull Request
 
-## 📄 License
+See our [Contributing Guide](CONTRIBUTING.md) for more details.
 
-This project is MIT licensed - see [LICENSE](LICENSE) for details.
+## 📜 License
+
+This project is MIT licensed - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
 - [Spotify Million Song Dataset](https://www.kaggle.com/spotify/million-song-dataset)
 - [Billboard Top 500](https://www.billboard.com/charts/hot-100)
 - [PyTorch Team](https://pytorch.org/)
+
+## 📬 Contact & Support
+
+- 📧 Email: [amir.haytham.salama@gmail.com](mailto:amir.haytham.salama@gmail.com)
+- 🐛 Issues: [GitHub Issues](https://github.com/AmirHaytham/LyricMind-AI/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/AmirHaytham/LyricMind-AI/discussions)
+
+---
+
+<div align="center">
+
+⭐️ Star this repo if you find it useful!
+
+Made with ❤️ by [Amir Haytham](https://github.com/AmirHaytham)
+
+</div>
