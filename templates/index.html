@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lyrics Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .gradient-custom {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+        }
+        .generated-lyrics {
+            white-space: pre-line;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            min-height: 200px;
+        }
+        .loading {
+            display: none;
+        }
+    </style>
+</head>
+<body class="gradient-custom min-vh-100">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card p-4">
+                    <h1 class="text-center mb-4">AI Lyrics Generator</h1>
+                    
+                    <div class="mb-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="artist" class="form-label">Artist Name</label>
+                                <input type="text" class="form-control" id="artist" placeholder="Enter artist name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="genre" class="form-label">Genre</label>
+                                <select class="form-select" id="genre">
+                                    <option value="">Select genre</option>
+                                    <option value="pop">Pop</option>
+                                    <option value="rock">Rock</option>
+                                    <option value="hip-hop">Hip Hop</option>
+                                    <option value="country">Country</option>
+                                    <option value="jazz">Jazz</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="maxLength" class="form-label">Max Length</label>
+                                <input type="number" class="form-control" id="maxLength" value="200" min="50" max="500">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="temperature" class="form-label">Temperature</label>
+                                <input type="range" class="form-range" id="temperature" min="0.1" max="2.0" step="0.1" value="1.0">
+                                <small class="text-muted">Current: <span id="tempValue">1.0</span></small>
+                            </div>
+                        </div>
+                        
+                        <button id="generateBtn" class="btn btn-primary w-100">Generate Lyrics</button>
+                    </div>
+                    
+                    <div class="loading text-center mb-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="generated-lyrics" id="lyricsOutput">
+                        Generated lyrics will appear here...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('temperature').addEventListener('input', function() {
+            document.getElementById('tempValue').textContent = this.value;
+        });
+        
+        document.getElementById('generateBtn').addEventListener('click', async function() {
+            const loading = document.querySelector('.loading');
+            const output = document.getElementById('lyricsOutput');
+            const button = document.getElementById('generateBtn');
+            
+            // Get input values
+            const artist = document.getElementById('artist').value;
+            const genre = document.getElementById('genre').value;
+            const maxLength = document.getElementById('maxLength').value;
+            const temperature = document.getElementById('temperature').value;
+            
+            // Show loading state
+            loading.style.display = 'block';
+            button.disabled = true;
+            output.textContent = 'Generating lyrics...';
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        artist,
+                        genre,
+                        max_length: parseInt(maxLength),
+                        temperature: parseFloat(temperature)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    output.textContent = 'Error: ' + data.error;
+                } else {
+                    output.textContent = data.lyrics;
+                }
+            } catch (error) {
+                output.textContent = 'Error generating lyrics. Please try again.';
+            } finally {
+                loading.style.display = 'none';
+                button.disabled = false;
+            }
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
