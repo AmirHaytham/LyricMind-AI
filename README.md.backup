@@ -1,0 +1,11 @@
+# LyricMind-AI: Creative Song Lyrics Generator
+
+LyricMind-AI is an advanced deep learning model that generates creative and contextually relevant song lyrics. Built with PyTorch and Flask, it uses LSTM architecture to understand and generate human-like lyrics across different musical genres.
+
+## 🌟 Features
+
+- **Creative Lyrics Generation**: Generate unique and contextually relevant lyrics from any prompt
+- **Genre-Aware**: Supports multiple music genres including Pop, Rock, Hip Hop, Country, and Jazz
+- **Temperature Control**: Adjust creativity vs. coherence with temperature parameter
+- **User-Friendly Interface**: Clean, modern web interface for easy interaction
+- **Real-Time Generation**: Fast response times with asynchronous processing
