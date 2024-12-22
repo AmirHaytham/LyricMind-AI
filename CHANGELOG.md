@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Update dependencies to fix security vulnerabilities:
+  - Update Flask to 3.0.0
+  - Update Flask-CORS to 4.0.0
+  - Add explicit version pins for all dependencies
+  - Add security-related packages (cryptography, urllib3, certifi)
+  - Update PyTorch to 2.1.2+cpu
+  - Update numpy, pandas, and other data processing libraries
+
 ### Added
 - Enhanced documentation with comprehensive README
 - API endpoint for lyrics generation

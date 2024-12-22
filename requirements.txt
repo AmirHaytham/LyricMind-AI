@@ -1,6 +1,33 @@
-flask==2.0.1
-torch==2.0.1
-numpy==1.21.2
-pandas==1.3.3
-scikit-learn==0.24.2
-tqdm==4.62.3
+# Web Framework
+flask==3.0.0  # Latest stable version
+flask-cors==4.0.0  # Latest stable version
+Werkzeug==3.0.1  # Required by Flask
+Jinja2==3.1.3  # Required by Flask
+click==8.1.7  # Required by Flask
+
+# Deep Learning
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==2.1.2+cpu  # Latest stable CPU version
+torchvision==0.16.2+cpu
+torchaudio==2.1.2+cpu
+
+# Data Processing
+numpy==1.24.3  # Latest stable version compatible with other packages
+pandas==2.1.4  # Latest stable version
+scikit-learn==1.3.2  # Latest stable version
+nltk==3.8.1  # Latest stable version
+tqdm==4.66.1  # Latest stable version
+textblob==0.17.1  # Latest stable version
+
+# Development Dependencies
+pytest==7.4.3
+pytest-cov==4.1.0
+flake8==6.1.0
+black==23.12.1
+mypy==1.8.0
+
+# Security Dependencies
+cryptography==41.0.7  # For secure operations
+urllib3==2.1.0  # For secure HTTP requests
+certifi==2023.11.17  # For secure certificate validation
+requests==2.31.0  # For HTTP requests
