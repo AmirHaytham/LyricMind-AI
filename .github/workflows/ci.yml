@@ -1,4 +1,4 @@
-name: CI/CD
+name: LyricMind-AI CI/CD
 
 on:
   push:
@@ -41,6 +41,9 @@ jobs:
       with:
         file: ./coverage.xml
         fail_ci_if_error: true
+        name: LyricMind-AI
+        flags: unittests
+        verbose: true
 
   deploy:
     needs: test

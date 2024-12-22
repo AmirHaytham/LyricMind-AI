@@ -9,12 +9,17 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 setup(
     name="lyricmind-ai",
     version="1.0.0",
-    author="LyricMind-AI Team",
-    author_email="your.email@example.com",
+    author="Amir Haytham",
+    author_email="amir.haytham.salama@gmail.com",
     description="An AI-powered creative lyrics generator using LSTM architecture",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/LyricMind-AI",
+    url="https://github.com/AMIRHaytham/lyricMind-AI",
+    project_urls={
+        "Bug Tracker": "https://github.com/AMIRHaytham/lyricMind-AI/issues",
+        "Source Code": "https://github.com/AMIRHaytham/lyricMind-AI",
+        "Author Twitter": "https://twitter.com/AmirHaytham_"
+    },
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",

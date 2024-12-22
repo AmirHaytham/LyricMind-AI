@@ -1,8 +1,9 @@
 # 🎵 LyricMind-AI: Creative Song Lyrics Generator
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/yourusername/LyricMind-AI)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/AMIRHaytham/lyricMind-AI)
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Twitter](https://img.shields.io/badge/twitter-@AmirHaytham__-1DA1F2)](https://twitter.com/AmirHaytham_)
 
 [Project Banner Image]
 
@@ -40,8 +41,8 @@ LyricMind-AI is an advanced deep learning model that generates creative and cont
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/yourusername/LyricMind-AI.git
-   cd LyricMind-AI
+   git clone https://github.com/AMIRHaytham/lyricMind-AI.git
+   cd lyricMind-AI
    ```
 
 2. **Set Up Virtual Environment**
@@ -159,4 +160,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Made with ❤️ by the LyricMind-AI Team
+Created by [Amir Haytham](https://twitter.com/AmirHaytham_) | [GitHub](https://github.com/AMIRHaytham)
