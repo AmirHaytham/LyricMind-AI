@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lyrics Generator</title>
+    <title>AI Lyrics Generator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .gradient-custom {
@@ -36,8 +36,8 @@
                     <div class="mb-4">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="artist" class="form-label">Artist Name</label>
-                                <input type="text" class="form-control" id="artist" placeholder="Enter artist name">
+                                <label for="prompt" class="form-label">Starting Lyrics</label>
+                                <input type="text" class="form-control" id="prompt" placeholder="Enter starting lyrics">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="genre" class="form-label">Genre</label>
@@ -55,12 +55,12 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="maxLength" class="form-label">Max Length</label>
-                                <input type="number" class="form-control" id="maxLength" value="200" min="50" max="500">
+                                <input type="number" class="form-control" id="maxLength" value="50" min="10" max="100">
                             </div>
                             <div class="col-md-6">
                                 <label for="temperature" class="form-label">Temperature</label>
-                                <input type="range" class="form-range" id="temperature" min="0.1" max="2.0" step="0.1" value="1.0">
-                                <small class="text-muted">Current: <span id="tempValue">1.0</span></small>
+                                <input type="range" class="form-range" id="temperature" min="0.1" max="2.0" step="0.1" value="0.5">
+                                <small class="text-muted">Current: <span id="tempValue">0.5</span></small>
                             </div>
                         </div>
                         
@@ -82,17 +82,24 @@
     </div>
     
     <script>
+        // Update temperature value display
         document.getElementById('temperature').addEventListener('input', function() {
             document.getElementById('tempValue').textContent = this.value;
         });
         
+        // Handle form submission
         document.getElementById('generateBtn').addEventListener('click', async function() {
             const loading = document.querySelector('.loading');
             const output = document.getElementById('lyricsOutput');
             const button = document.getElementById('generateBtn');
             
             // Get input values
-            const artist = document.getElementById('artist').value;
+            const prompt = document.getElementById('prompt').value;
+            if (!prompt) {
+                output.textContent = 'Please enter some starting lyrics';
+                return;
+            }
+            
             const genre = document.getElementById('genre').value;
             const maxLength = document.getElementById('maxLength').value;
             const temperature = document.getElementById('temperature').value;
@@ -106,24 +113,30 @@
                 const response = await fetch('/generate', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({
-                        artist,
-                        genre,
+                        prompt: prompt,
+                        genre: genre,
                         max_length: parseInt(maxLength),
                         temperature: parseFloat(temperature)
                     })
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const data = await response.json();
                 
                 if (data.error) {
                     output.textContent = 'Error: ' + data.error;
                 } else {
-                    output.textContent = data.lyrics;
+                    output.textContent = data.lyrics || 'No lyrics generated';
                 }
             } catch (error) {
+                console.error('Error:', error);
                 output.textContent = 'Error generating lyrics. Please try again.';
             } finally {
                 loading.style.display = 'none';

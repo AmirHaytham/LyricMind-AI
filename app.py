@@ -1,81 +1,132 @@
-from flask import Flask, render_template, request, jsonify
-import torch
-from model import LyricsGenerator
-from data_preprocessing import TextPreprocessor
 import os
+import json
+import torch
+import logging
+import traceback
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+from model import LyricsGenerator
+from preprocessor import TextPreprocessor
 
 app = Flask(__name__)
+CORS(app)
 
-# Global variables for model and preprocessor
+# Configure logging
+logging.basicConfig(level=logging.INFO,
+                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = app.logger
+
+# Global variables
 model = None
 preprocessor = None
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def load_model():
-    """Load the model and preprocessor with error handling"""
+# Initialize model and preprocessor
+def init_model():
+    """Initialize the model and preprocessor."""
+    global model, preprocessor, device
+    
     try:
-        # Initialize preprocessor and model with the same parameters used during training
-        preprocessor = TextPreprocessor(min_freq=2)
+        # Initialize preprocessor
+        logger.info("Starting model loading process...")
+        preprocessor = TextPreprocessor()
+        logger.info("TextPreprocessor initialized")
         
-        # For testing purposes, initialize with minimal vocabulary if no checkpoint exists
-        if not os.path.exists('model_checkpoint.pth'):
-            preprocessor.word2idx = {'<PAD>': 0, '<UNK>': 1, '<START>': 2, '<END>': 3}
-            preprocessor.idx2word = {v: k for k, v in preprocessor.word2idx.items()}
-            preprocessor.vocab_size = len(preprocessor.word2idx)
+        # Load vocabulary
+        vocab_path = os.path.join(os.path.dirname(__file__), 'vocab.json')
+        logger.info(f"Loading vocabulary from {vocab_path}")
+        preprocessor.load_vocabulary(vocab_path)
         
+        # Initialize model
+        logger.info("Initializing model...")
         model = LyricsGenerator(
-            vocab_size=len(preprocessor.word2idx),
-            embedding_dim=256,
-            hidden_dim=512,
-            n_layers=2,
-            dropout=0.5
-        )
+            vocab_size=preprocessor.get_vocab_size(),
+            embedding_dim=64,
+            hidden_dim=128,
+            num_layers=1,
+            dropout=0.3
+        ).to(device)
+        logger.info(f"Model initialized on device: {device}")
         
-        # Load trained weights if available
-        if os.path.exists('model_checkpoint.pth'):
-            checkpoint = torch.load('model_checkpoint.pth', map_location=torch.device('cpu'))
+        # Load model weights if available
+        model_path = os.path.join(os.path.dirname(__file__), 'best_model.pth')
+        if os.path.exists(model_path):
+            logger.info(f"Loading model weights from {model_path}")
+            checkpoint = torch.load(model_path, map_location=device)
             model.load_state_dict(checkpoint['model_state_dict'])
-            preprocessor.word2idx = checkpoint['word2idx']
-            preprocessor.idx2word = checkpoint['idx2word']
-            preprocessor.vocab_size = len(preprocessor.word2idx)
+            logger.info("Model weights loaded successfully")
+        else:
+            logger.warning(f"No model weights found at {model_path}, using initialized weights")
         
-        model.eval()  # Set to evaluation mode
+        model.eval()
+        logger.info("Model set to evaluation mode")
+        
         return model, preprocessor
+        
     except Exception as e:
-        print(f"Error loading model: {str(e)}")
+        logger.error(f"Error initializing model: {str(e)}")
+        logger.error("Traceback: %s", traceback.format_exc())
         return None, None
 
-def validate_input(data):
-    """Validate and sanitize input data"""
-    errors = []
-    
-    # Validate max_length
-    max_length = data.get('max_length', 200)
-    if not isinstance(max_length, (int, float)) or max_length < 50 or max_length > 500:
-        errors.append("max_length must be between 50 and 500")
-        max_length = 200  # Use default
-    
-    # Validate temperature
-    temperature = data.get('temperature', 1.0)
-    if not isinstance(temperature, (int, float)) or temperature < 0.1 or temperature > 2.0:
-        errors.append("temperature must be between 0.1 and 2.0")
-        temperature = 1.0  # Use default
-    
-    # Validate genre
-    valid_genres = ['pop', 'rock', 'hip-hop', 'country', 'jazz', '']
-    genre = data.get('genre', '').lower()
-    if genre not in valid_genres:
-        errors.append(f"genre must be one of: {', '.join(valid_genres)}")
-        genre = ''  # Use default
-    
-    return {
-        'artist': data.get('artist', ''),
-        'genre': genre,
-        'max_length': int(max_length),
-        'temperature': float(temperature)
-    }, errors
-
-# Load model on startup
-model, preprocessor = load_model()
+def generate_lyrics(prompt, max_length=50, temperature=0.7):
+    """Generate lyrics given a prompt."""
+    try:
+        if model is None or preprocessor is None:
+            logger.error("Model or preprocessor not initialized")
+            return None
+            
+        # Preprocess prompt
+        logger.info(f'Words from prompt: {prompt.split()}')
+        input_sequence = preprocessor.text_to_sequence(prompt)
+        if not input_sequence:
+            logger.error("Failed to convert prompt to sequence")
+            return None
+            
+        logger.info(f'Input sequence: {input_sequence}')
+        
+        # Convert to tensor
+        input_tensor = torch.tensor([input_sequence]).to(device)
+        logger.info(f'Input tensor shape: {input_tensor.shape}')
+        
+        # Generate
+        with torch.no_grad():
+            generated_sequence = []
+            current_input = input_tensor
+            
+            for _ in range(max_length):
+                # Forward pass
+                output = model(current_input)
+                
+                # Get next token probabilities
+                next_token_logits = output[0, -1, :] / temperature
+                next_token_probs = torch.softmax(next_token_logits, dim=0)
+                
+                # Sample next token
+                next_token = torch.multinomial(next_token_probs, 1)
+                
+                # Check for end of sequence
+                if next_token.item() == preprocessor.special_tokens['<EOS>']:
+                    break
+                    
+                # Add to generated sequence
+                generated_sequence.append(next_token.item())
+                
+                # Update input for next iteration
+                current_input = torch.cat([current_input, next_token.unsqueeze(0).unsqueeze(0)], dim=1)
+                
+        # Convert sequence back to text
+        generated_text = preprocessor.sequence_to_text(generated_sequence)
+        if not generated_text:
+            logger.warning("Generated empty text")
+            return "Could not generate meaningful lyrics. Please try a different prompt."
+            
+        logger.info(f'Final generated lyrics: {generated_text!r}')
+        return generated_text.strip()
+        
+    except Exception as e:
+        logger.error(f'Error in generate_lyrics: {str(e)}')
+        logger.error(f'Traceback: {traceback.format_exc()}')
+        return None
 
 @app.route('/')
 def home():
@@ -83,55 +134,93 @@ def home():
 
 @app.route('/generate', methods=['POST'])
 def generate():
+    """Generate lyrics based on input parameters."""
     try:
-        # Check if model is loaded
-        if model is None or preprocessor is None:
-            return jsonify({'error': 'Model not initialized properly'}), 500
-            
         data = request.get_json()
-        validated_data, errors = validate_input(data)
         
-        if errors:
-            return jsonify({'error': 'Invalid input: ' + '; '.join(errors)}), 400
+        # Get parameters with defaults
+        prompt = data.get('prompt', '')
+        max_length = data.get('max_length', 50)
+        temperature = data.get('temperature', 0.7)
+        genre = data.get('genre', 'pop')  # Default genre
+        
+        # Validate parameters
+        if not prompt:
+            return jsonify({
+                'error': 'No prompt provided',
+                'lyrics': None
+            }), 400
+            
+        try:
+            max_length = int(max_length)
+            if max_length <= 0 or max_length > 500:
+                return jsonify({
+                    'error': 'max_length must be between 1 and 500',
+                    'lyrics': None
+                }), 400
+        except ValueError:
+            return jsonify({
+                'error': 'Invalid max_length value',
+                'lyrics': None
+            }), 400
+            
+        try:
+            temperature = float(temperature)
+            if temperature <= 0 or temperature > 2.0:
+                return jsonify({
+                    'error': 'temperature must be between 0 and 2.0',
+                    'lyrics': None
+                }), 400
+        except ValueError:
+            return jsonify({
+                'error': 'Invalid temperature value',
+                'lyrics': None
+            }), 400
+            
+        # Log parameters
+        logger.info(f"Validated parameters - prompt: '{prompt}', max_length: {max_length}, temperature: {temperature}, genre: {genre}")
+        
+        # Check if model is initialized
+        if model is None or preprocessor is None:
+            return jsonify({
+                'error': 'Model not initialized. Please try again later.',
+                'lyrics': None
+            }), 503  # Service Unavailable
         
         # Generate lyrics
-        device = torch.device('cpu')
-        model.to(device)
+        logger.info(f"Generating lyrics with prompt: '{prompt}', max_length: {max_length}, temperature: {temperature}")
+        lyrics = generate_lyrics(prompt, max_length, temperature)
         
-        # For testing purposes, return dummy lyrics if no checkpoint exists
-        if not os.path.exists('model_checkpoint.pth'):
-            return jsonify({'lyrics': 'This is a test lyric generated for testing purposes.'})
+        if lyrics is None:
+            return jsonify({
+                'error': 'Failed to generate lyrics',
+                'lyrics': None
+            }), 500
+            
+        # Log success
+        logger.info(f"Successfully generated lyrics: '{lyrics}'")
         
-        # Start with START token
-        current_seq = torch.tensor([[preprocessor.word2idx['<START>']]], device=device)
-        generated_text = []
-        
-        # Generate sequence
-        with torch.no_grad():
-            hidden = None
-            for i in range(validated_data['max_length']):
-                output, hidden = model(current_seq, hidden)
-                
-                # Apply temperature scaling
-                output = output[:, -1, :] / validated_data['temperature']
-                probs = torch.softmax(output, dim=-1)
-                
-                # Sample from the distribution
-                next_token = torch.multinomial(probs, 1)
-                
-                # Break if END token is generated
-                if next_token.item() == preprocessor.word2idx['<END>']:
-                    break
-                    
-                generated_text.append(preprocessor.idx2word[next_token.item()])
-                current_seq = next_token.unsqueeze(0)
-        
-        # Join the generated words
-        lyrics = ' '.join(generated_text)
-        return jsonify({'lyrics': lyrics})
+        return jsonify({
+            'error': None,
+            'lyrics': lyrics
+        }), 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error in generate endpoint: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({
+            'error': str(e),
+            'lyrics': None
+        }), 500
+
+# Load model on startup
+logger.info("\n=== Starting Application ===")
+logger.info("Loading model...")
+model, preprocessor = init_model()
+if model is None or preprocessor is None:
+    logger.error("Failed to load model or preprocessor")
+else:
+    logger.info("Model loaded successfully")
 
 if __name__ == '__main__':
     app.run(debug=True)

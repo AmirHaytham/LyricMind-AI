@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import nltk
 import os
+import json
 from torch.utils.data import DataLoader, TensorDataset
 
 try:
@@ -86,7 +87,7 @@ def test_model_basic(model, preprocessor, device):
             sequence = [preprocessor.word2idx.get(word, preprocessor.word2idx['<UNK>']) 
                        for word in words]
             sequence = [preprocessor.word2idx['<START>']] + sequence  # Add START token
-            current_seq = torch.tensor([sequence], device=device)
+            current_seq = torch.tensor([sequence], device=device).unsqueeze(0)
             
             # Generate
             model.eval()
@@ -95,7 +96,7 @@ def test_model_basic(model, preprocessor, device):
                 hidden = None
                 
                 for _ in range(50):  # Generate up to 50 words
-                    output, hidden = model(current_seq, hidden)
+                    output, hidden = model(current_seq.squeeze(0), hidden)
                     output = output[:, -1, :] / temp
                     probs = torch.softmax(output, dim=-1)
                     next_token = torch.multinomial(probs, 1)
@@ -103,7 +104,12 @@ def test_model_basic(model, preprocessor, device):
                     if next_token.item() == preprocessor.word2idx['<END>']:
                         break
                         
-                    generated.append(preprocessor.idx2word[next_token.item()])
+                    # Use get() with <UNK> as default for unknown indices
+                    next_word = preprocessor.idx2word.get(str(next_token.item()), '<UNK>')
+                    if next_word == '<UNK>':
+                        continue
+                        
+                    generated.append(next_word)
                     current_seq = next_token.unsqueeze(0)
             
             print(' '.join(generated))
@@ -120,26 +126,39 @@ def test_model_diversity(model, preprocessor, device, n_samples=5):
     sequence = [preprocessor.word2idx['<START>']]  # Start with START token
     sequence += [preprocessor.word2idx.get(word, preprocessor.word2idx['<UNK>']) 
                 for word in prompt.split()]
+    sequence = torch.tensor(sequence, device=device)  # Shape: [seq_len]
     
     # Generate multiple samples
     for i in range(n_samples):
-        current_seq = torch.tensor([sequence], device=device)
         model.eval()
         with torch.no_grad():
             generated = []
+            current_seq = sequence.clone()
             hidden = None
             
             for _ in range(50):
+                # Forward pass
                 output, hidden = model(current_seq, hidden)
-                output = output[:, -1, :] / temperature
+                
+                # Get next token probabilities
+                if len(output.shape) == 3:
+                    output = output[:, -1, :]  # Take last token if sequence
+                output = output / temperature
                 probs = torch.softmax(output, dim=-1)
-                next_token = torch.multinomial(probs, 1)
+                
+                # Sample next token
+                next_token = torch.multinomial(probs[0], 1)
                 
                 if next_token.item() == preprocessor.word2idx['<END>']:
                     break
                     
-                generated.append(preprocessor.idx2word[next_token.item()])
-                current_seq = next_token.unsqueeze(0)
+                # Use get() with <UNK> as default for unknown indices
+                next_word = preprocessor.idx2word.get(str(next_token.item()), '<UNK>')
+                if next_word == '<UNK>':
+                    continue
+                    
+                generated.append(next_word)
+                current_seq = next_token
         
         samples.append(' '.join(generated))
     
@@ -161,45 +180,60 @@ def test_model_diversity(model, preprocessor, device, n_samples=5):
     print(f"Average length: {total_words/len(samples):.1f} words")
 
 def test_model_coherence(model, preprocessor, device):
-    """Test model's ability to maintain coherence"""
+    """Test model's ability to maintain emotional and thematic coherence"""
     print("\nCoherence Testing:")
     
-    test_cases = [
-        ("Love is", "Testing emotional context"),
-        ("In the night", "Testing setting/atmosphere"),
-        ("She was", "Testing character/narrative"),
-        ("The rhythm of", "Testing musical context")
+    print("\nTesting emotional context")
+    prompts = [
+        "Love is",
+        "Heartbreak feels",
+        "Dancing makes me",
+        "The rain brings"
     ]
     
-    for prompt, desc in test_cases:
-        print(f"\n{desc}")
-        print(f"Prompt: {prompt}")
+    for prompt in prompts:
+        print(f"\nPrompt: {prompt}")
         
         # Convert prompt to sequence
-        sequence = [preprocessor.word2idx['<START>']]
-        sequence += [preprocessor.word2idx.get(word, preprocessor.word2idx['<UNK>']) 
-                    for word in prompt.split()]
-        current_seq = torch.tensor([sequence], device=device)
+        words = prompt.split()
+        sequence = [preprocessor.word2idx.get(word, preprocessor.word2idx['<UNK>']) 
+                   for word in words]
+        sequence = [preprocessor.word2idx['<START>']] + sequence
+        sequence = torch.tensor(sequence, device=device)
         
-        # Generate
         model.eval()
         with torch.no_grad():
             generated = []
+            current_seq = sequence
             hidden = None
             
-            for _ in range(50):
+            for _ in range(30):  # Generate 30 words for coherence testing
+                # Forward pass
                 output, hidden = model(current_seq, hidden)
-                output = output[:, -1, :] / 0.7  # Use lower temperature for coherence
+                
+                # Get next token probabilities
+                if len(output.shape) == 3:
+                    output = output[:, -1, :]
+                output = output / 0.7  # Lower temperature for more coherent output
                 probs = torch.softmax(output, dim=-1)
+                
+                # Sample next token
+                if len(probs.shape) > 1:
+                    probs = probs[0]
                 next_token = torch.multinomial(probs, 1)
                 
                 if next_token.item() == preprocessor.word2idx['<END>']:
                     break
-                    
-                generated.append(preprocessor.idx2word[next_token.item()])
-                current_seq = next_token.unsqueeze(0)
-        
-        print(' '.join(generated))
+                
+                # Use get() with <UNK> as default for unknown indices
+                next_word = preprocessor.idx2word.get(str(next_token.item()), '<UNK>')
+                if next_word == '<UNK>':
+                    continue
+                
+                generated.append(next_word)
+                current_seq = next_token
+            
+            print(' '.join(generated))
 
 def main():
     # Set device
@@ -213,26 +247,36 @@ def main():
         print("Failed to load data. Exiting...")
         return
     
-    # Initialize preprocessor
+    # Initialize preprocessor and load saved vocabulary
     print("Initializing preprocessor...")
     preprocessor = TextPreprocessor(min_freq=2)
-    preprocessor.build_vocab(lyrics)
-    print(f"Vocabulary size: {preprocessor.vocab_size}")
+    if os.path.exists('vocab.json'):
+        print("Loading saved vocabulary...")
+        with open('vocab.json', 'r') as f:
+            vocab_data = json.load(f)
+            preprocessor.word2idx = vocab_data['word2idx']
+            preprocessor.idx2word = vocab_data['idx2word']
+            preprocessor.vocab_size = vocab_data['vocab_size']
+        print(f"Loaded vocabulary size: {preprocessor.vocab_size}")
+    else:
+        print("Building new vocabulary...")
+        preprocessor.build_vocab(lyrics)
+        print(f"New vocabulary size: {preprocessor.vocab_size}")
     
     # Initialize model
     print("Initializing model...")
     model = LyricsGenerator(
         vocab_size=preprocessor.vocab_size,
-        embedding_dim=256,
-        hidden_dim=512,
-        n_layers=2,
-        dropout=0.5
+        embedding_dim=64,  # Match training parameters
+        hidden_dim=128,    # Match training parameters
+        n_layers=1,        # Match training parameters
+        dropout=0.3        # Match training parameters
     ).to(device)
     
     # Load trained weights
-    if os.path.exists('model_checkpoint.pth'):
+    if os.path.exists('best_model.pth'):
         print("Loading trained model...")
-        checkpoint = torch.load('model_checkpoint.pth', map_location=device)
+        checkpoint = torch.load('best_model.pth', map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
         print("Model loaded successfully.")
     else:

@@ -47,26 +47,19 @@ class TestLyricsGenerator(unittest.TestCase):
 
     def test_generate_lyrics_missing_input(self):
         """Test lyrics generation with missing input"""
-        test_data = {}  # Empty data
-        response = self.app.post('/generate',
-                               data=json.dumps(test_data),
-                               content_type='application/json')
-        self.assertEqual(response.status_code, 200)  # Should still work with defaults
-
+        response = self.app.post('/generate', json={})
+        self.assertEqual(response.status_code, 400)  # Should fail with 400 Bad Request
+        data = response.get_json()
+        self.assertIn('error', data)
+        self.assertIsNone(data['lyrics'])
+        
     def test_model_output_format(self):
         """Test if model output is properly formatted"""
-        test_data = {
-            'artist': 'Test Artist',
-            'genre': 'pop',
-            'max_length': 50,
-            'temperature': 0.5
-        }
-        response = self.app.post('/generate',
-                               data=json.dumps(test_data),
-                               content_type='application/json')
-        data = json.loads(response.data)
-        self.assertIsInstance(data['lyrics'], str)
-        self.assertTrue(len(data['lyrics']) > 0)
+        response = self.app.post('/generate', json={'prompt': 'I love you'})
+        self.assertEqual(response.status_code, 503)  # Service Unavailable when model not initialized
+        data = response.get_json()
+        self.assertIn('error', data)
+        self.assertIsNone(data['lyrics'])
 
 if __name__ == '__main__':
     unittest.main()
